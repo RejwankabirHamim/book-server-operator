@@ -1,0 +1,9 @@
+apiVersion: books.com.books.com/v1
+kind: Bookstore
+metadata:
+  labels:
+    app.kubernetes.io/name: bookstore
+    app.kubernetes.io/managed-by: kustomize
+  name: bookstore-sample
+spec:
+  # TODO(user): Add fields here
