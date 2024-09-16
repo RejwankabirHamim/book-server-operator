@@ -25,6 +25,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
+	"k8s.io/klog/v2"
+	kmc "kmodules.xyz/client-go/client"
 	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -83,12 +85,43 @@ func (r *BookstoreReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// slow down the execution to see the changes clearly
 	time.Sleep(time.Second * 5)
-	// TODO(user): your logic here
 
 	var bs bookscomv1.Bookstore
 
 	if err := r.Get(ctx, req.NamespacedName, &bs); err != nil {
 		fmt.Println("Unable to get Bookstore resource", err)
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	var bsdeep = bs.DeepCopy()
+
+	_, err := kmc.PatchStatus(ctx, r.Client, bsdeep, func(obj client.Object) client.Object {
+		in := obj.(*bookscomv1.Bookstore)
+		if in.Status.State == "" {
+			in.Status.State = "Running"
+		}
+		return in
+	})
+	if err != nil {
+		klog.Error("failed to update the book server status")
+		return ctrl.Result{}, err
+	}
+
+	if err := r.Get(ctx, req.NamespacedName, &bs); err != nil {
+		fmt.Println("Unable to get Bookstore resource", err)
+
+		var bsdeep = bs.DeepCopy()
+
+		_, err := kmc.PatchStatus(ctx, r.Client, bsdeep, func(obj client.Object) client.Object {
+			in := obj.(*bookscomv1.Bookstore)
+			in.Status.State = "Failed"
+			return in
+		})
+		if err != nil {
+			klog.Error("failed to update the book server status")
+			return ctrl.Result{}, err
+		}
+
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
@@ -110,15 +143,54 @@ func (r *BookstoreReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		deployment = *newDeployment(&bs)
 		if err := r.Create(ctx, &deployment); err != nil {
 			fmt.Println("Deployment creation error", err)
+
+			var bsdeep = bs.DeepCopy()
+
+			_, err := kmc.PatchStatus(ctx, r.Client, bsdeep, func(obj client.Object) client.Object {
+				in := obj.(*bookscomv1.Bookstore)
+				in.Status.DeploymentMessage = "Deployment creation error"
+				return in
+			})
+			if err != nil {
+				klog.Error("failed to update the book server status")
+				return ctrl.Result{}, err
+			}
+
 			return ctrl.Result{}, err
 		}
+
 		fmt.Println("Deployment created")
+
+		var bsdeep = bs.DeepCopy()
+
+		_, err := kmc.PatchStatus(ctx, r.Client, bsdeep, func(obj client.Object) client.Object {
+			in := obj.(*bookscomv1.Bookstore)
+			if in.Status.DeploymenCreated == false {
+				in.Status.DeploymenCreated = true
+			}
+			return in
+		})
+		if err != nil {
+			klog.Error("failed to update the book server status")
+			return ctrl.Result{}, err
+		}
 	}
 
 	if isDeploymentChanged(&bs, &deployment) {
 		fmt.Println("Deployment changed")
 		if err := r.Update(ctx, &deployment); err != nil {
 			fmt.Println("Deployment update error", err)
+			var bsdeep = bs.DeepCopy()
+
+			_, err := kmc.PatchStatus(ctx, r.Client, bsdeep, func(obj client.Object) client.Object {
+				in := obj.(*bookscomv1.Bookstore)
+				in.Status.DeploymentMessage = "Deployment update error"
+				return in
+			})
+			if err != nil {
+				klog.Error("failed to update the book server status")
+				return ctrl.Result{}, err
+			}
 			return ctrl.Result{}, err
 		}
 		fmt.Println("Deployment updated")
@@ -140,9 +212,32 @@ func (r *BookstoreReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		svc = *newService(&bs)
 		if err := r.Create(ctx, &svc); err != nil {
 			fmt.Println("Service creation error", err)
+			var bsdeep = bs.DeepCopy()
+
+			_, err := kmc.PatchStatus(ctx, r.Client, bsdeep, func(obj client.Object) client.Object {
+				in := obj.(*bookscomv1.Bookstore)
+				in.Status.ServiceMessage = "Service creation error"
+				return in
+			})
+			if err != nil {
+				klog.Error("failed to update the book server status")
+				return ctrl.Result{}, err
+			}
 			return ctrl.Result{}, err
 		}
 		fmt.Println("Service created")
+		var bsdeep = bs.DeepCopy()
+		_, err := kmc.PatchStatus(ctx, r.Client, bsdeep, func(obj client.Object) client.Object {
+			in := obj.(*bookscomv1.Bookstore)
+			if in.Status.ServiceCreated == false {
+				in.Status.ServiceCreated = true
+			}
+			return in
+		})
+		if err != nil {
+			klog.Error("failed to update the book server status")
+			return ctrl.Result{}, err
+		}
 	}
 
 	if isServiceChanged(&bs, &svc) {
@@ -152,6 +247,17 @@ func (r *BookstoreReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, err
 		}
 		fmt.Println("Service updated")
+	}
+	var bsdeep1 = bs.DeepCopy()
+
+	_, err = kmc.PatchStatus(ctx, r.Client, bsdeep1, func(obj client.Object) client.Object {
+		in := obj.(*bookscomv1.Bookstore)
+		in.Status.State = "Ready"
+		return in
+	})
+	if err != nil {
+		klog.Error("failed to update the book server status")
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil

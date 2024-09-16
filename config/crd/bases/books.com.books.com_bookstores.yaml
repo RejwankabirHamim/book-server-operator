@@ -55,17 +55,16 @@ spec:
             type: object
           status:
             properties:
-              availableReplicas:
-                format: int32
-                type: integer
-              hasDeployment:
+              deploymenCreated:
                 type: boolean
-              hasService:
+              deploymentMessage:
+                type: string
+              serviceCreated:
                 type: boolean
-            required:
-            - availableReplicas
-            - hasDeployment
-            - hasService
+              serviceMessage:
+                type: string
+              state:
+                type: string
             type: object
         required:
         - metadata
@@ -73,3 +72,5 @@ spec:
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}

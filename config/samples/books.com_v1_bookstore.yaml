@@ -10,4 +10,6 @@ spec:
   container:
     image: "hamim99/book-server:latest"
     port: 8080
+status:
+  deploymenCreated : false
 

@@ -20,8 +20,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// +genclient
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 
 type Bookstore struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -30,13 +30,16 @@ type Bookstore struct {
 	Spec   BookstoreSpec   `json:"spec"`
 	Status BookstoreStatus `json:"status,omitempty"`
 }
+
 type BookstoreStatus struct {
-	AvailableReplicas int32 `json:"availableReplicas"`
-	HasDeployment     bool  `json:"hasDeployment"`
-	HasService        bool  `json:"hasService"`
+	State             string `json:"state,omitempty"`
+	DeploymenCreated  bool   `json:"deploymenCreated,omitempty"`
+	DeploymentMessage string `json:"deploymentMessage,omitempty"`
+	ServiceCreated    bool   `json:"serviceCreated,omitempty"`
+	ServiceMessage    string `json:"serviceMessage,omitempty"`
 }
 
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:object:root=true
 
 type BookstoreList struct {
 	metav1.TypeMeta `json:",inline"`
