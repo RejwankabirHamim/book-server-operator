@@ -20,36 +20,43 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// BookstoreSpec defines the desired state of Bookstore
-type BookstoreSpec struct {
-	Foo string `json:"foo,omitempty"`
-}
-
-// BookstoreStatus defines the observed state of Bookstore
-type BookstoreStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
-
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 
-// Bookstore is the Schema for the bookstores API
 type Bookstore struct {
 	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.ObjectMeta `json:"metadata"`
 
-	Spec   BookstoreSpec   `json:"spec,omitempty"`
+	Spec   BookstoreSpec   `json:"spec"`
 	Status BookstoreStatus `json:"status,omitempty"`
+}
+
+type BookstoreStatus struct {
+	State             string `json:"state,omitempty"`
+	DeploymenCreated  bool   `json:"deploymenCreated,omitempty"`
+	DeploymentMessage string `json:"deploymentMessage,omitempty"`
+	ServiceCreated    bool   `json:"serviceCreated,omitempty"`
+	ServiceMessage    string `json:"serviceMessage,omitempty"`
 }
 
 // +kubebuilder:object:root=true
 
-// BookstoreList contains a list of Bookstore
 type BookstoreList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Bookstore `json:"items"`
+	metav1.ListMeta `json:"metadata"`
+
+	Items []Bookstore `json:"items"`
+}
+
+type BookstoreSpec struct {
+	Replicas  *int32        `json:"replicas"`
+	Container ContainerSpec `json:"container,container"`
+}
+
+// ContainerSpec contains specs of container
+type ContainerSpec struct {
+	Image string `json:"image,omitempty"`
+	Port  int32  `json:"port,omitempty"`
 }
 
 func init() {
